@@ -1,50 +1,87 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 schedules:
-- cron: "0 8 * * *"
+- cron: "0 0 * * *"
   displayName: Daily midnight build
   branches:
     include:
-    - master
+    - internal
   always: true
 
-trigger: none
-pr: none
-
 parameters:
-- name: 'arches'
-  type: object
-  default: 
-  - amd64
-  - armhf
-  - arm64
+- name: 'input'
+  type: string
+  default: 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
+  values:
+    - 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
+    - 'master internal'
+    - '202012 internal-202012'
+    - '201811 internal-201811'
+    - '202106 internal-202106'
 
-resources:
-  repositories:
-  - repository: buildimage
-    type: github
-    name: Azure/sonic-buildimage
-    endpoint: build
+jobs:
+  - job: code-merge
+    pool:
+      vmimage: ubuntu-20.04
+    timeoutInMinutes: 10
+    steps:
+      - bash: |
+          FAILED=""
+          merge(){
+            github-branch=$1
+            msazure-branch=$2
+            echo "=== Merging branch -${msazure-branch}- -${github-branch}- ... ==="
+            if [ -d sonic-buildimage ];then
+              rm -rf sonic-buildimage || {echo "=== FATAL: rm -rf sonic-buildimage failed ==="; exit 1}
+            fi
+            mkdir sonic-buildimage
+            cd sonic-buildimage
+            git init
+            git config --global user.email "svc-acs@microsoft.com"
+            git config --global user.name "Sonic Automation"
+            git remote add msazure https://msazure.visualstudio.com/One/_git/Networking-acs-buildimage
+            git remote add azure https://github.com/Azure/sonic-buildimage
+            git remote update
+            git checkout -b ms$msazure-branch --track msazure/$msazure-branch
+            curr_tag=`git tag --contains HEAD`
+            if [[ -z ${curr_tag} ]];then
+              curr_tag="${msazure-branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
+              echo "Add a tag ${curr_tag} to current ${msazure-branch} before merging ..."
+              git tag ${curr_tag}
+              RC=0
+              git push msazure ${curr_tag} || RC=$?
+              if [[ ${RC} != 0 ]];then
+                return 11
+              fi
+            fi
 
-stages:
-- stage: Build
-  jobs:
-  - ${{ each arch in parameters.arches }}:
-    - ${{ if endswith(variables['Build.DefinitionName'], 'buster') }}:
-      - template: template/sonic-slave-build.yml
-        parameters:
-          arch: ${{ arch }}
-          distro: buster
-    - ${{ if endswith(variables['Build.DefinitionName'], 'stretch') }}:
-      - template: template/sonic-slave-build.yml
-        parameters:
-          arch: ${{ arch }}
-          distro: stretch
-    - ${{ if endswith(variables['Build.DefinitionName'], 'jessie') }}:
-      - template: template/sonic-slave-build.yml
-        parameters:
-          arch: ${{ arch }}
-          distro: jessie
+            post_tag="${msazure-branch}-`date '+%Y%m%d-%H%M'`.post-merge"
+            RC=0
+            git pull azure $github-branch --no-edit || RC=$?
+            if [[ ${RC} != 0 ]];then
+              return 12
+            fi
+
+            head_tag=`git tag --contains HEAD`
+            if [[ ${head_tag} == ${curr_tag} ]];then
+              echo "No change after rebasing ..."
+            else
+              echo "Add a tag ${post_tag} to current ${msazure-branch} after merging ..."
+              git tag ${post_tag}
+              RC=0
+              git push msazure ${post_tag} || RC=$?
+              if [[ ${RC} != 0 ]];then
+                return 13
+              fi
+              git push msazure ${msazure-branch}
+            fi
+          }
+          main(){
+            while [[ $# > 1 ]];do
+              merge $1 $2 || FAILED="${FAILED} $1"
+              shift 2
+            done
+            if [[ -n ${FAILED} ]];then
+              echo "Failed to merge following public branches: ${FAILED} ..."
+              exit 10
+            fi
+          }
+          main ${{ parameters.input }}
