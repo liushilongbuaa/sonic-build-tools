@@ -20,10 +20,10 @@ parameters:
     - '202106 internal-202106'
 variables:
   A: HHHHH
-  ${{ if eq(variables['input'], 'haha') }}:
+  ${{ if eq(variables['abc'], 'haha') }}:
     A: BBBBB
 jobs:
-  - job: code-merge
+  - job: code_merge
     pool:
       vmimage: ubuntu-20.04
     timeoutInMinutes: 10
