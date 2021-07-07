@@ -30,6 +30,7 @@ jobs:
     steps:
       - bash: |
           echo $(A)
+          echo $(abc)
           exit 1
           FAILED=""
           merge(){
