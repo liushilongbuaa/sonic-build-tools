@@ -20,7 +20,7 @@ parameters:
     - '202106 internal-202106'
 variables:
   A: HHHHH
-  ${{ if eq(variables['input'], haha) }}:
+  ${{ if eq(variables['input'], 'haha') }}:
     A: BBBBB
 jobs:
   - job: code-merge
