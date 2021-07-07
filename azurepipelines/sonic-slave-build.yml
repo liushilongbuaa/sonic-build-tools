@@ -19,9 +19,9 @@ parameters:
     - '201811 internal-201811'
     - '202106 internal-202106'
 variables:
-  A: HHHHH
   ${{ if eq(variables['abc'], 'haha') }}:
     A: BBBBB
+  A: HHHHH
 jobs:
   - job: code_merge
     pool:
