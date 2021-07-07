@@ -1,3 +1,5 @@
+pr: none
+trigger: none
 schedules:
 - cron: "0 0 * * *"
   displayName: Daily midnight build
@@ -16,7 +18,8 @@ parameters:
     - '202012 internal-202012'
     - '201811 internal-201811'
     - '202106 internal-202106'
-
+variables:
+  A: HHHHH
 jobs:
   - job: code-merge
     pool:
@@ -24,6 +27,8 @@ jobs:
     timeoutInMinutes: 10
     steps:
       - bash: |
+          echo $(A)
+          exit 1
           FAILED=""
           merge(){
             github-branch=$1
