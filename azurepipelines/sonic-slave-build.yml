@@ -47,9 +47,9 @@ parameters:
 # input in variables: ms_token, git_token
 variables:
   - name: ms_repo_url
-    value: https://$[variables.ms_token]${{parameters.ms_repo_url_tail}}
+    value: https://$(ms_token)${{parameters.ms_repo_url_tail}}
   - name: git_repo_url
-    value: https://$[variables.git_token]${{parameters.git_repo_url_tail}}
+    value: https://$(git_token)${{parameters.git_repo_url_tail}}
   - ${{ if eq(parameters.base_repo, 'git') }}:
     - name: base_url
       value: $(git_repo_url)
@@ -68,7 +68,6 @@ jobs:
     timeoutInMinutes: 10
     steps:
       - bash: |
-          env
           echo ==========================================
           echo base_url:$(base_url), target_url:$(target_url)
           exit 1
