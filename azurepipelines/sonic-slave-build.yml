@@ -15,7 +15,7 @@ parameters:
     default: 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
     values:
       - 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
-      - 'master internal'
+      - 'master1 internal'
       - '202012 internal-202012'
       - '201811 internal-201811'
       - '202106 internal-202106'
@@ -35,7 +35,7 @@ parameters:
     type: string
     default: ms
     values:
-      - git
+      - github
       - ms
   - name: exec_push
     type: string
@@ -50,7 +50,7 @@ variables:
     value: https://$(ms_token)${{parameters.ms_repo_url_tail}}
   - name: git_repo_url
     value: https://$(git_token)${{parameters.git_repo_url_tail}}
-  - ${{ if eq(parameters.base_repo, 'git') }}:
+  - ${{ if eq(parameters.base_repo, 'github') }}:
     - name: base_url
       value: $(git_repo_url)
     - name: target_url
@@ -67,43 +67,48 @@ jobs:
       vmimage: ubuntu-20.04
     timeoutInMinutes: 10
     steps:
+      - checkout: none
       - bash: |
-          echo ==========================================
-          echo base_url:$(base_url), target_url:$(target_url)
+          pwd
+          echo BUILD_REPOSITORY_LOCALPATH $(BUILD_REPOSITORY_LOCALPATH)
+          echo AGENT_WORKFOLDER $(AGENT_WORKFOLDER)
           exit 1
       - bash: |
+          set -x
           FAILED=""
           merge(){
             base_branch=$1
             target_branch=$2
-            echo "=== Merging branch -${msazure-branch}- -${github-branch}- ... ==="
-            if [ -d sonic-buildimage ];then
-              rm -rf sonic-buildimage || {echo "=== FATAL: rm -rf sonic-buildimage failed ==="; exit 1}
+            echo "=== Merging branch -${base_branch}- -${target_branch}- ... ==="
+            if [ -d repo ];then
+              rm -rf repo || {echo "=== FATAL: rm -rf repo failed ==="; exit 1}
             fi
-            mkdir sonic-buildimage
-            cd sonic-buildimage
+            mkdir repo
+            cd repo
             git init
             git config --global user.email "svc-acs@microsoft.com"
             git config --global user.name "Sonic Automation"
+            echo ====base_url:$(base_url), target_url:$(target_url)====
             git remote add base $(base_url)
             git remote add target $(target_url)
             git remote update
-            git checkout -b base_$msazure-branch --track msazure/$msazure-branch
+            echo ====base_branch:${base_branch}, target_branch:${target_branch}====
+            git checkout -b ${base_branch} --track base/${base_branch}
             curr_tag=`git tag --contains HEAD`
             if [[ -z ${curr_tag} ]];then
-              curr_tag="${msazure-branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
-              echo "Add a tag ${curr_tag} to current ${msazure-branch} before merging ..."
+              curr_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
+              echo "Add a tag ${curr_tag} to current ${base_branch} before merging ..."
               git tag ${curr_tag}
               RC=0
-              git push msazure ${curr_tag} || RC=$?
+              [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${curr_tag} || RC=$?
               if [[ ${RC} != 0 ]];then
                 return 11
               fi
             fi
 
-            post_tag="${msazure-branch}-`date '+%Y%m%d-%H%M'`.post-merge"
+            post_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.post-merge"
             RC=0
-            git pull azure $github-branch --no-edit || RC=$?
+            git pull target ${target_branch} --no-edit || RC=$?
             if [[ ${RC} != 0 ]];then
               return 12
             fi
@@ -112,30 +117,30 @@ jobs:
             if [[ ${head_tag} == ${curr_tag} ]];then
               echo "No change after rebasing ..."
             else
-              echo "Add a tag ${post_tag} to current ${msazure-branch} after merging ..."
+              echo "Add a tag ${post_tag} to current ${base_branch} after merging ..."
               git tag ${post_tag}
               RC=0
-              git push msazure ${post_tag} || RC=$?
+              [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${post_tag} || RC=$?
               if [[ ${RC} != 0 ]];then
                 return 13
               fi
-              git push msazure ${msazure-branch}
+              [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${base_branch}
             fi
           }
           main(){
             while [[ $# > 1 ]];do
-              if [[ $(base_repo) == 'git' ]];then
+              if [[ ${{parameters.base_repo}} == 'github' ]];then
                 base_branch=$1
                 target_branch=$2
               else
                 base_branch=$2
                 target_branch=$1
               fi
-              merge $base_branch $target_branch || FAILED="${FAILED} $base_branch"
+              merge ${base_branch} ${target_branch} || FAILED="${FAILED} ${base_branch}"
               shift 2
             done
             if [[ -n ${FAILED} ]];then
-              echo "Failed to merge following public branches: ${FAILED} ..."
+              echo "Failed to merge following ${{parameters.base_repo}} branches: ${FAILED} ..."
               exit 10
             fi
           }
