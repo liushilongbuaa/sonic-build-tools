@@ -62,7 +62,6 @@ jobs:
           merge(){
             base_branch=$1
             target_branch=$2
-            echo "=== Merging branch -${base_branch}- -${target_branch}- ... ==="
             cd ${BUILD_REPOSITORY_LOCALPATH}
             if [ -d repo ];then
               rm -rf repo || (echo "=== FATAL: rm -rf repo failed ==="; exit 1)
@@ -76,13 +75,12 @@ jobs:
             git remote add base $(base_url)
             git remote add target $(target_url)
             git remote update || exit 1
-            echo ====base_branch:${base_branch}, target_branch:${target_branch}====
             git checkout -b ${base_branch} --track base/${base_branch}
 
             curr_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
             post_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.post-merge"
-            echo "Add a tag ${curr_tag} to current ${base_branch} before merging ..."
             git tag ${curr_tag}
+            git log -n 1
 
             RC=0
             git pull target ${target_branch} --no-edit || RC=$?
@@ -90,6 +88,7 @@ jobs:
               return 11
             fi
 
+            git log -n 1
             head_tag=`git tag --contains HEAD`
             tem=`echo ${head_tag} | grep ${curr_tag}`
             if [[ ${tem} != "" ]];then
@@ -97,6 +96,7 @@ jobs:
               return 0
             else
               git tag ${post_tag}
+              git log -n 1
             fi
 
             if [[ ${{parameters.exec_push}} == yes ]];then
