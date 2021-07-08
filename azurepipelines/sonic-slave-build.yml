@@ -81,7 +81,7 @@ jobs:
             echo "Add a tag ${curr_tag} to current ${base_branch} before merging ..."
             git tag ${curr_tag}
             RC=0
-            [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${curr_tag} || RC=$?
+            [[ ${{parameters.exec_push}} == yes ]] && git push base ${curr_tag} || RC=$?
             if [[ ${RC} != 0 ]];then
               return 11
             fi
@@ -98,16 +98,16 @@ jobs:
             else
               echo "Add a tag ${post_tag} to current ${base_branch} after merging ..."
               git tag ${post_tag}
-              [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${post_tag} || RC=$?
+              [[ ${{parameters.exec_push}} == yes ]] && git push base ${post_tag} || RC=$?
               if [[ ${RC} != 0 ]];then
                 return 13
               fi
-              [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${base_branch}
+              [[ ${{parameters.exec_push}} == yes ]] && git push base ${base_branch}
             fi
           }
           main(){
             while [[ $# > 1 ]];do
-              if [[ ${{parameters.base_repo}} == 'github' ]];then
+              if [[ ${{parameters.base_repo}} == github ]];then
                 base_branch=$1
                 target_branch=$2
               else
