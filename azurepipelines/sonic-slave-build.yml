@@ -81,7 +81,7 @@ jobs:
             curr_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
             post_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.post-merge"
             git tag ${curr_tag}
-            git log -n 1
+            git log -n 1 --tags *
 
             RC=0
             git pull target ${target_branch} --no-edit || RC=$?
@@ -89,7 +89,7 @@ jobs:
               return 11
             fi
 
-            git log -n 1
+            git log -n 1 --tags *
             head_tag=`git tag --contains HEAD`
             tem=`echo ${head_tag} | grep ${curr_tag}`
             if [[ ${tem} != "" ]];then
@@ -97,7 +97,7 @@ jobs:
               return 0
             else
               git tag ${post_tag}
-              git log -n 1
+              git log -n 1 --tags *
             fi
 
             if [[ ${{parameters.exec_push}} == yes ]];then
