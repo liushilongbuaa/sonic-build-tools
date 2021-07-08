@@ -12,9 +12,9 @@ parameters:
       - 'msazure.visualstudio.com/One/_git/Networking-acs-sonic-mgmt'
   - name: 'git_repo_url_tail'
     type: string
-    default: 'github.com/liushilongbuaa/sonic-buildimage'
+    default: 'github.com/Azure/sonic-buildimage'
     values:
-      - 'github.com/liushilongbuaa/sonic-buildimage'
+      - 'github.com/Azure/sonic-buildimage'
       - 'github.com/Azure/sonic-mgmt'
   - name: 'base_repo'
     type: string
@@ -62,6 +62,7 @@ jobs:
           merge(){
             base_branch=$1
             target_branch=$2
+            # cd /home/vsts/work/1/s
             cd ${BUILD_REPOSITORY_LOCALPATH}
             if [ -d repo ];then
               rm -rf repo || (echo "=== FATAL: rm -rf repo failed ==="; exit 1)
