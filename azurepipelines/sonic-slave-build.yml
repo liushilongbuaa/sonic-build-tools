@@ -72,7 +72,7 @@ jobs:
             echo ====base_url:$(base_url), target_url:$(target_url)====
             git remote add base $(base_url)
             git remote add target $(target_url)
-            git remote update
+            git remote update || exit 1
             echo ====base_branch:${base_branch}, target_branch:${target_branch}====
             git checkout -b ${base_branch} --track base/${base_branch}
 
