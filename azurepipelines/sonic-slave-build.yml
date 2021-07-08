@@ -67,9 +67,13 @@ jobs:
       vmimage: ubuntu-20.04
     timeoutInMinutes: 10
     steps:
+      - ${{ if $(system.debug) }}:
+        - bash: |
+            env
+            echo ==========================================
+            echo base_url:$(base_url), target_url:$(target_url)
+            exit 1
       - bash: |
-          env
-          exit 1
           FAILED=""
           merge(){
             base_branch=$1
