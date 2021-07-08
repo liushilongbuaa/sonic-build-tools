@@ -9,15 +9,54 @@ schedules:
   always: true
 
 parameters:
-- name: 'input'
-  type: string
-  default: 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
-  values:
-    - 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
-    - 'master internal'
-    - '202012 internal-202012'
-    - '201811 internal-201811'
-    - '202106 internal-202106'
+  - name: 'inputs'
+    type: string
+    default: 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
+    values:
+      - 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
+      - 'master internal'
+      - '202012 internal-202012'
+      - '201811 internal-201811'
+      - '202106 internal-202106'
+  - name: 'ms_repo_url_tail'
+    type: string
+    default:
+    values:
+      - 'msazure.visualstudio.com/One/_git/Networking-acs-buildimage'
+      - 'msazure.visualstudio.com/One/_git/Networking-acs-sonic-mgmt'
+  - name: 'git_repo_url_tail'
+    type: string
+    values:
+      - 'github.com/Azure/sonic-buildimage'
+      - 'github.com/Azure/sonic-mgmt'
+  - name: 'base_repo'
+    type: string
+    values:
+      - git
+      - ms
+  - name: exec_push
+    type: string
+    values:
+      - yes
+      - no
+    default: no
+
+# input in variables: ms_token, git_token
+variables:
+  - name: ms_repo_url
+    value: https://$(ms_token)$(ms_repo_url_tail)
+  - name: git_repo_url
+    value: https://$(git_token)$(git_repo_url_tail)
+  - ${{ if eq(variables['base_repo'], 'git') }}:
+    - name: base_url
+      value: $(git_repo_url)
+    - name: target_url
+      value: $(ms_repo_url)
+  - ${{ if eq(variables['base_repo'], 'ms') }}:
+    - name: base_url
+      value: $(ms_repo_url)
+    - name: target_url
+      value: $(git_repo_url)
 
 jobs:
   - job: code_merge
