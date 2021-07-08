@@ -33,6 +33,7 @@ parameters:
       - 'github.com/Azure/sonic-mgmt'
   - name: 'base_repo'
     type: string
+    default: ms
     values:
       - git
       - ms
