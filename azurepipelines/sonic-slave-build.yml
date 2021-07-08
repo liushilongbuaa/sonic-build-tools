@@ -1,3 +1,4 @@
+trigger: none
 parameters:
   # input github branch first, ms branch second.
   - name: 'branch_list'
