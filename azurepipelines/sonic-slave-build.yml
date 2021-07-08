@@ -47,15 +47,15 @@ parameters:
 # input in variables: ms_token, git_token
 variables:
   - name: ms_repo_url
-    value: https://$(ms_token)$(ms_repo_url_tail)
+    value: https://$(ms_token)${{parameters.ms_repo_url_tail}}
   - name: git_repo_url
-    value: https://$(git_token)$(git_repo_url_tail)
-  - ${{ if eq(variables['base_repo'], 'git') }}:
+    value: https://$(git_token)${{parameters.git_repo_url_tail}}
+  - ${{ if eq(parameters.base_repo, 'git') }}:
     - name: base_url
       value: $(git_repo_url)
     - name: target_url
       value: $(ms_repo_url)
-  - ${{ if eq(variables['base_repo'], 'ms') }}:
+  - ${{ if eq(parameters.base_repo, 'ms') }}:
     - name: base_url
       value: $(ms_repo_url)
     - name: target_url
