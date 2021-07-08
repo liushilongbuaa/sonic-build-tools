@@ -67,7 +67,7 @@ jobs:
       vmimage: ubuntu-20.04
     timeoutInMinutes: 10
     steps:
-      - ${{ if eq(system.debug, true) }}:
+      - ${{ if eq(variables['system.debug'], true) }}:
         - bash: |
             env
             echo ==========================================
