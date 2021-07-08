@@ -1,24 +1,8 @@
-pr: none
-trigger: none
-schedules:
-- cron: "0 0 * * *"
-  displayName: Daily midnight build
-  branches:
-    include:
-    - internal
-  always: true
-
 parameters:
   # input github branch first, ms branch second.
   - name: 'branch_list'
     type: string
     default: 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
-    values:
-      - 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
-      - 'master1 internal'
-      - '202012 internal-202012'
-      - '201811 internal-201811'
-      - '202106 internal-202106'
   - name: 'ms_repo_url_tail'
     type: string
     default: 'msazure.visualstudio.com/One/_git/Networking-acs-buildimage'
@@ -70,18 +54,12 @@ jobs:
       - checkout: none
       - bash: |
           set -x
-          pwd
-          ls -al
-          echo BUILD_REPOSITORY_LOCALPATH ${BUILD_REPOSITORY_LOCALPATH}
-          echo AGENT_WORKFOLDER ${AGENT_WORKFOLDER}
-          exit 1
-      - bash: |
-          set -x
           FAILED=""
           merge(){
             base_branch=$1
             target_branch=$2
             echo "=== Merging branch -${base_branch}- -${target_branch}- ... ==="
+            cd ${BUILD_REPOSITORY_LOCALPATH}
             if [ -d repo ];then
               rm -rf repo || {echo "=== FATAL: rm -rf repo failed ==="; exit 1}
             fi
@@ -96,32 +74,29 @@ jobs:
             git remote update
             echo ====base_branch:${base_branch}, target_branch:${target_branch}====
             git checkout -b ${base_branch} --track base/${base_branch}
-            curr_tag=`git tag --contains HEAD`
-            if [[ -z ${curr_tag} ]];then
-              curr_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
-              echo "Add a tag ${curr_tag} to current ${base_branch} before merging ..."
-              git tag ${curr_tag}
-              RC=0
-              [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${curr_tag} || RC=$?
-              if [[ ${RC} != 0 ]];then
-                return 11
-              fi
+
+            curr_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
+            post_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.post-merge"
+            echo "Add a tag ${curr_tag} to current ${base_branch} before merging ..."
+            git tag ${curr_tag}
+            RC=0
+            [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${curr_tag} || RC=$?
+            if [[ ${RC} != 0 ]];then
+              return 11
             fi
 
-            post_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.post-merge"
-            RC=0
             git pull target ${target_branch} --no-edit || RC=$?
             if [[ ${RC} != 0 ]];then
               return 12
             fi
 
             head_tag=`git tag --contains HEAD`
-            if [[ ${head_tag} == ${curr_tag} ]];then
+            tem=`echo ${head_tag} | grep ${curr_tag}`
+            if [[ ${tem} != "" ]];then
               echo "No change after rebasing ..."
             else
               echo "Add a tag ${post_tag} to current ${base_branch} after merging ..."
               git tag ${post_tag}
-              RC=0
               [[ '${{parameters.exec_push}}' == 'yes' ]] && git push base ${post_tag} || RC=$?
               if [[ ${RC} != 0 ]];then
                 return 13
