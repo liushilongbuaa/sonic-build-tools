@@ -70,8 +70,8 @@ jobs:
       - checkout: none
       - bash: |
           pwd
-          echo BUILD_REPOSITORY_LOCALPATH $(BUILD_REPOSITORY_LOCALPATH)
-          echo AGENT_WORKFOLDER $(AGENT_WORKFOLDER)
+          echo BUILD_REPOSITORY_LOCALPATH ${BUILD_REPOSITORY_LOCALPATH}
+          echo AGENT_WORKFOLDER ${AGENT_WORKFOLDER}
           exit 1
       - bash: |
           set -x
