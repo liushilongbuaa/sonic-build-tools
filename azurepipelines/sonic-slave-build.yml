@@ -9,7 +9,8 @@ schedules:
   always: true
 
 parameters:
-  - name: 'inputs'
+  # input github branch first, ms branch second.
+  - name: 'branch_list'
     type: string
     default: 'master internal 202012 internal-202012 201811 internal-201811 202106 internal-202106'
     values:
@@ -20,12 +21,13 @@ parameters:
       - '202106 internal-202106'
   - name: 'ms_repo_url_tail'
     type: string
-    default:
+    default: 'msazure.visualstudio.com/One/_git/Networking-acs-buildimage'
     values:
       - 'msazure.visualstudio.com/One/_git/Networking-acs-buildimage'
       - 'msazure.visualstudio.com/One/_git/Networking-acs-sonic-mgmt'
   - name: 'git_repo_url_tail'
     type: string
+    default: 'github.com/Azure/sonic-buildimage'
     values:
       - 'github.com/Azure/sonic-buildimage'
       - 'github.com/Azure/sonic-mgmt'
@@ -65,10 +67,12 @@ jobs:
     timeoutInMinutes: 10
     steps:
       - bash: |
+          env
+          exit 1
           FAILED=""
           merge(){
-            github-branch=$1
-            msazure-branch=$2
+            base_branch=$1
+            target_branch=$2
             echo "=== Merging branch -${msazure-branch}- -${github-branch}- ... ==="
             if [ -d sonic-buildimage ];then
               rm -rf sonic-buildimage || {echo "=== FATAL: rm -rf sonic-buildimage failed ==="; exit 1}
@@ -78,10 +82,10 @@ jobs:
             git init
             git config --global user.email "svc-acs@microsoft.com"
             git config --global user.name "Sonic Automation"
-            git remote add msazure https://msazure.visualstudio.com/One/_git/Networking-acs-buildimage
-            git remote add azure https://github.com/Azure/sonic-buildimage
+            git remote add base $(base_url)
+            git remote add target $(target_url)
             git remote update
-            git checkout -b ms$msazure-branch --track msazure/$msazure-branch
+            git checkout -b base_$msazure-branch --track msazure/$msazure-branch
             curr_tag=`git tag --contains HEAD`
             if [[ -z ${curr_tag} ]];then
               curr_tag="${msazure-branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
@@ -117,7 +121,14 @@ jobs:
           }
           main(){
             while [[ $# > 1 ]];do
-              merge $1 $2 || FAILED="${FAILED} $1"
+              if [[ $(base_repo) == 'git' ]];then
+                base_branch=$1
+                target_branch=$2
+              else
+                base_branch=$2
+                target_branch=$1
+              fi
+              merge $base_branch $target_branch || FAILED="${FAILED} $base_branch"
               shift 2
             done
             if [[ -n ${FAILED} ]];then
