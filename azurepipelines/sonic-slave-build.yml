@@ -31,20 +31,24 @@ parameters:
 
 # input in variables: ms_token, git_token
 variables:
-  - name: ms_repo_url
-    value: https://$(ms_token)${{parameters.ms_repo_url_tail}}
-  - name: git_repo_url
-    value: https://$(git_token)${{parameters.git_repo_url_tail}}
   - ${{ if eq(parameters.base_repo, 'github') }}:
+    - name: base_url_tail
+      value: ${{parameters.git_repo_url_tail}}
     - name: base_url
-      value: $(git_repo_url)
+      value: https://$(git_token)$(base_url_tail)
+    - name: target_url_tail
+      value: ${{parameters.ms_repo_url_tail}}
     - name: target_url
-      value: $(ms_repo_url)
+      value: https://$(ms_token)$(target_url_tail)
   - ${{ if eq(parameters.base_repo, 'ms') }}:
+    - name: base_url_tail
+      value: ${{parameters.ms_repo_url_tail}}
     - name: base_url
-      value: $(ms_repo_url)
+      value: https://$(ms_token)$(base_url_tail)
+    - name: target_url_tail
+      value: ${{parameters.git_repo_url_tail}}
     - name: target_url
-      value: $(git_repo_url)
+      value: https://$(git_token)$(target_url_tail)
 
 jobs:
   - job: code_merge
@@ -54,7 +58,6 @@ jobs:
     steps:
       - checkout: none
       - bash: |
-          set -x
           FAILED=""
           merge(){
             base_branch=$1
@@ -62,14 +65,14 @@ jobs:
             echo "=== Merging branch -${base_branch}- -${target_branch}- ... ==="
             cd ${BUILD_REPOSITORY_LOCALPATH}
             if [ -d repo ];then
-              rm -rf repo || {echo "=== FATAL: rm -rf repo failed ==="; exit 1}
+              rm -rf repo || (echo "=== FATAL: rm -rf repo failed ==="; exit 1)
             fi
             mkdir repo
             cd repo
             git init
             git config --global user.email "svc-acs@microsoft.com"
             git config --global user.name "Sonic Automation"
-            echo ====base_url:$(base_url), target_url:$(target_url)====
+            echo ====base:$(base_url_tail), target:$(target_url_tail)====
             git remote add base $(base_url)
             git remote add target $(target_url)
             git remote update || exit 1
