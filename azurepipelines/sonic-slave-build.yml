@@ -1,4 +1,3 @@
-trigger: none
 parameters:
   # input github branch first, ms branch second.
   - name: 'branch_list'
@@ -12,16 +11,18 @@ parameters:
       - 'msazure.visualstudio.com/One/_git/Networking-acs-sonic-mgmt'
   - name: 'git_repo_url_tail'
     type: string
-    default: 'github.com/liushilongbuaa/sonic-buildimage'
+    default: 'github.com/Azure/sonic-buildimage'
     values:
-      - 'github.com/liushilongbuaa/sonic-buildimage'
+      - 'github.com/Azure/sonic-buildimage'
       - 'github.com/Azure/sonic-mgmt'
+  # select base repo
   - name: 'base_repo'
     type: string
     default: ms
     values:
       - github
       - ms
+  # whether push after merge
   - name: exec_push
     type: string
     values:
@@ -29,7 +30,7 @@ parameters:
       - no
     default: no
 
-# input in variables: ms_token, git_token
+# two variables are needed: ms_token and git_token. they need endup with '@'
 variables:
   - ${{ if eq(parameters.base_repo, 'github') }}:
     - name: base_url_tail
@@ -65,14 +66,14 @@ jobs:
             # cd /home/vsts/work/1/s
             cd ${BUILD_REPOSITORY_LOCALPATH}
             if [ -d repo ];then
-              rm -rf repo || (echo "=== FATAL: rm -rf repo failed ==="; exit 1)
+              rm -rf repo || (echo "====== FATAL: rm -rf repo failed ======"; exit 1)
             fi
             mkdir repo
             cd repo
             git init
             git config --global user.email "svc-acs@microsoft.com"
             git config --global user.name "Sonic Automation"
-            echo ====base:$(base_url_tail), target:$(target_url_tail)====
+            echo "=======base:$(base_url_tail), target:$(target_url_tail)======="
             git remote add base $(base_url)
             git remote add target $(target_url)
             git remote update || exit 1
@@ -81,7 +82,6 @@ jobs:
             curr_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.pre-merge"
             post_tag="${base_branch}-`date '+%Y%m%d-%H%M'`.post-merge"
             git tag ${curr_tag}
-            git log -n 1 --tags *
 
             RC=0
             git pull target ${target_branch} --no-edit || RC=$?
@@ -89,15 +89,13 @@ jobs:
               return 11
             fi
 
-            git log -n 1 --tags *
             head_tag=`git tag --contains HEAD`
             tem=`echo ${head_tag} | grep ${curr_tag}`
             if [[ ${tem} != "" ]];then
-              echo "No change after rebasing ..."
+              echo "======No change after rebasing ...======"
               return 0
             else
               git tag ${post_tag}
-              git log -n 1 --tags *
             fi
 
             if [[ ${{parameters.exec_push}} == yes ]];then
@@ -128,7 +126,7 @@ jobs:
               shift 2
             done
             if [[ -n ${FAILED} ]];then
-              echo "Failed to merge following ${{parameters.base_repo}} branches: ${FAILED} ..."
+              echo "======Failed to merge following ${{parameters.base_repo}} branches: ${FAILED} ...======"
               exit 10
             fi
           }
