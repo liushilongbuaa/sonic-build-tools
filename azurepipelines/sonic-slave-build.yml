@@ -12,9 +12,9 @@ parameters:
       - 'msazure.visualstudio.com/One/_git/Networking-acs-sonic-mgmt'
   - name: 'git_repo_url_tail'
     type: string
-    default: 'github.com/Azure/sonic-buildimage'
+    default: 'github.com/liushilongbuaa/sonic-buildimage'
     values:
-      - 'github.com/Azure/sonic-buildimage'
+      - 'github.com/liushilongbuaa/sonic-buildimage'
       - 'github.com/Azure/sonic-mgmt'
   - name: 'base_repo'
     type: string
