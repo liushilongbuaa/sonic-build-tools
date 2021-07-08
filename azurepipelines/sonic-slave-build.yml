@@ -69,7 +69,9 @@ jobs:
     steps:
       - checkout: none
       - bash: |
+          set -x
           pwd
+          ls -al
           echo BUILD_REPOSITORY_LOCALPATH ${BUILD_REPOSITORY_LOCALPATH}
           echo AGENT_WORKFOLDER ${AGENT_WORKFOLDER}
           exit 1
